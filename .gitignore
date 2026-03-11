@@ -177,3 +177,14 @@ cython_debug/
 results/
 diagnostic_results/
 *.json
+
+### Glancey ###
+
+# Glancey configuration file
+glancey.conf
+
+# Glancey generated files
+.glancey/
+
+### IntelliJ IDEA ###
+.idea/
