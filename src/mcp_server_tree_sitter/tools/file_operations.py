@@ -28,9 +28,15 @@ def list_project_files(
     Returns:
         List of relative file paths
     """
+    from ..api import get_config
+
     root = project.root_path
     pattern = pattern or "**/*"
     files = []
+    excluded_dirs = get_config().security.excluded_dirs
+
+    def _is_excluded(path: Path) -> bool:
+        return any(part in excluded_dirs for part in path.relative_to(root).parts)
 
     # Handle max_depth=0 specially to avoid glob patterns with /*
     if max_depth == 0:
@@ -62,7 +68,7 @@ def list_project_files(
         filter_extensions = [ext.lower() for ext in filter_extensions]
 
     for path in root.glob(pattern):
-        if path.is_file():
+        if path.is_file() and not _is_excluded(path):
             # Skip files that don't match extension filter
             if filter_extensions and path.suffix.lower()[1:] not in filter_extensions:
                 continue

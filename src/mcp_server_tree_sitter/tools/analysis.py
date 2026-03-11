@@ -483,13 +483,16 @@ def analyze_project_structure(
             if not extensions:
                 continue
 
-            # Find sample files
+            # Find sample files (respecting excluded_dirs)
             sample_files = []
+            excluded_dirs = config.security.excluded_dirs
             for ext in extensions:
                 # Look for files with this extension
                 pattern = f"**/*.{ext}"
                 for path in root.glob(pattern):
-                    if path.is_file():
+                    if path.is_file() and not any(
+                        part in excluded_dirs for part in path.relative_to(root).parts
+                    ):
                         rel_path = str(path.relative_to(root))
                         sample_files.append(rel_path)
 

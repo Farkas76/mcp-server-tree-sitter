@@ -50,9 +50,17 @@ class Project:
             languages: dict[str, int] = {}
             scanned: set[str] = set()
 
-            for root, _, files in os.walk(self.root_path):
-                # Skip hidden directories
-                if any(part.startswith(".") for part in Path(root).parts):
+            from ..api import get_config
+
+            config = get_config()
+            excluded_dirs = config.security.excluded_dirs
+
+            for root, dirs, files in os.walk(self.root_path):
+                # Prune hidden and excluded directories in-place to prevent descent
+                dirs[:] = [d for d in dirs if not d.startswith(".") and d not in excluded_dirs]
+
+                # Skip hidden directories in the current path
+                if any(part.startswith(".") for part in Path(root).relative_to(self.root_path).parts):
                     continue
 
                 for file in files:
