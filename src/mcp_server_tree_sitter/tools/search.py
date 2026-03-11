@@ -7,6 +7,7 @@ from typing import Any
 
 from ..exceptions import QueryError, SecurityError
 from ..utils.security import validate_file_access
+from ..utils.tree_sitter_types import query_captures
 
 
 def search_text(
@@ -201,60 +202,11 @@ def query_code(
 
             # Execute query
             lang = language_registry.get_language(language)
-            query = lang.query(query_string)
+            captures = query_captures(lang, query_string, tree.root_node)
 
-            captures = query.captures(tree.root_node)
-
-            # Handle different return formats from query.captures()
-            if isinstance(captures, dict):
-                # Dictionary format: {capture_name: [node1, node2, ...], ...}
-                for capture_name, nodes in captures.items():
-                    for node in nodes:
-                        # Skip if we've reached max results
-                        if max_results is not None and len(results) >= max_results:
-                            break
-
-                        try:
-                            from ..utils.tree_sitter_helpers import get_node_text
-
-                            text = get_node_text(node, source_bytes, decode=True)
-                        except Exception:
-                            text = "<binary data>"
-
-                        result = {
-                            "file": file_path,
-                            "capture": capture_name,
-                            "start": {
-                                "row": node.start_point[0],
-                                "column": node.start_point[1],
-                            },
-                            "end": {
-                                "row": node.end_point[0],
-                                "column": node.end_point[1],
-                            },
-                        }
-
-                        if include_snippets:
-                            result["text"] = text
-
-                        results.append(result)
-            else:
-                # List format: [(node1, capture_name1), (node2, capture_name2), ...]
-                for match in captures:
-                    # Handle different return types from query.captures()
-                    if isinstance(match, tuple) and len(match) == 2:
-                        # Direct tuple unpacking
-                        node, capture_name = match
-                    elif hasattr(match, "node") and hasattr(match, "capture_name"):
-                        # Object with node and capture_name attributes
-                        node, capture_name = match.node, match.capture_name
-                    elif isinstance(match, dict) and "node" in match and "capture" in match:
-                        # Dictionary with node and capture keys
-                        node, capture_name = match["node"], match["capture"]
-                    else:
-                        # Skip if format is unknown
-                        continue
-
+            # Dictionary format: {capture_name: [node1, node2, ...], ...}
+            for capture_name, nodes in captures.items():
+                for node in nodes:
                     # Skip if we've reached max results
                     if max_results is not None and len(results) >= max_results:
                         break
@@ -266,14 +218,17 @@ def query_code(
                     except Exception:
                         text = "<binary data>"
 
-                    result = {
+                    result: dict[str, Any] = {
                         "file": file_path,
                         "capture": capture_name,
                         "start": {
                             "row": node.start_point[0],
                             "column": node.start_point[1],
                         },
-                        "end": {"row": node.end_point[0], "column": node.end_point[1]},
+                        "end": {
+                            "row": node.end_point[0],
+                            "column": node.end_point[1],
+                        },
                     }
 
                     if include_snippets:

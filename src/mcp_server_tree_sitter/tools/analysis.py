@@ -16,6 +16,7 @@ from ..utils.tree_sitter_helpers import (
     get_node_text,
     parse_with_cached_tree,
 )
+from ..utils.tree_sitter_types import query_captures
 
 
 def extract_symbols(
@@ -98,8 +99,7 @@ def extract_symbols(
             if "classes" not in symbols:
                 symbols["classes"] = []
 
-            class_query = safe_lang.query(queries["classes"])
-            class_matches = class_query.captures(tree.root_node)
+            class_matches = query_captures(safe_lang, queries["classes"], tree.root_node)
 
             # Process class locations to identify their boundaries
             process_symbol_matches(class_matches, "classes", symbols, source_bytes, tree)
@@ -124,8 +124,7 @@ def extract_symbols(
             if symbol_type not in symbols:
                 symbols[symbol_type] = []
 
-            query = safe_lang.query(query_string)
-            matches = query.captures(tree.root_node)
+            matches = query_captures(safe_lang, query_string, tree.root_node)
 
             process_symbol_matches(
                 matches,
@@ -145,24 +144,12 @@ def extract_symbols(
                     name: (aliased_import)) @import
                 """
 
-                aliased_query = safe_lang.query(aliased_query_string)
-                aliased_matches = aliased_query.captures(tree.root_node)
+                aliased_matches = query_captures(safe_lang, aliased_query_string, tree.root_node)
 
-                for match in aliased_matches:
-                    node = None
-                    capture_name = ""
-
-                    # Handle different return types
-                    if isinstance(match, tuple) and len(match) == 2:
-                        node, capture_name = match
-                    elif hasattr(match, "node") and hasattr(match, "capture_name"):
-                        node, capture_name = match.node, match.capture_name
-                    elif isinstance(match, dict) and "node" in match and "capture" in match:
-                        node, capture_name = match["node"], match["capture"]
-                    else:
+                for capture_name, nodes in aliased_matches.items():
+                    if capture_name != "import.from":
                         continue
-
-                    if capture_name == "import.from":
+                    for node in nodes:
                         module_name = get_node_text(node, source_bytes)
                         # Add this module to the import list
                         symbols["imports"].append(
@@ -184,24 +171,12 @@ def extract_symbols(
 
                 # Additionally, run a query to get all aliased imports directly
                 alias_query_string = "(aliased_import) @alias"
-                alias_query = safe_lang.query(alias_query_string)
-                alias_matches = alias_query.captures(tree.root_node)
+                alias_matches = query_captures(safe_lang, alias_query_string, tree.root_node)
 
-                for match in alias_matches:
-                    node = None
-                    capture_name = ""
-
-                    # Handle different return types
-                    if isinstance(match, tuple) and len(match) == 2:
-                        node, capture_name = match
-                    elif hasattr(match, "node") and hasattr(match, "capture_name"):
-                        node, capture_name = match.node, match.capture_name
-                    elif isinstance(match, dict) and "node" in match and "capture" in match:
-                        node, capture_name = match["node"], match["capture"]
-                    else:
+                for capture_name, nodes in alias_matches.items():
+                    if capture_name != "alias":
                         continue
-
-                    if capture_name == "alias":
+                    for node in nodes:
                         alias_text = get_node_text(node, source_bytes)
                         module_name = ""
 
@@ -378,29 +353,9 @@ def process_symbol_matches(
             # Skip problematic nodes
             pass
 
-    # Process nodes based on return format
-    if isinstance(matches, dict):
-        # Dictionary format: {capture_name: [node1, node2, ...], ...}
-        for capture_name, nodes in matches.items():
-            for node in nodes:
-                process_node(node, capture_name)
-    else:
-        # List format: [(node1, capture_name1), (node2, capture_name2), ...]
-        for match in matches:
-            # Handle different return types from query.captures()
-            if isinstance(match, tuple) and len(match) == 2:
-                # Direct tuple unpacking
-                node, capture_name = match
-            elif hasattr(match, "node") and hasattr(match, "capture_name"):
-                # Object with node and capture_name attributes
-                node, capture_name = match.node, match.capture_name
-            elif isinstance(match, dict) and "node" in match and "capture" in match:
-                # Dictionary with node and capture keys
-                node, capture_name = match["node"], match["capture"]
-            else:
-                # Skip if format is unknown
-                continue
-
+    # Process nodes from dict format: {capture_name: [node1, node2, ...], ...}
+    for capture_name, nodes in matches.items():
+        for node in nodes:
             process_node(node, capture_name)
 
 
@@ -625,8 +580,7 @@ def find_dependencies(
         tree, source_bytes = parse_with_cached_tree(abs_path, language, safe_lang)
 
         # Execute query
-        query = safe_lang.query(query_string)
-        matches = query.captures(tree.root_node)
+        matches = query_captures(safe_lang, query_string, tree.root_node)
 
         # Organize imports by type
         imports: dict[str, list[str]] = defaultdict(list)
@@ -705,29 +659,9 @@ def find_dependencies(
                 # Skip problematic nodes
                 pass
 
-        # Handle different return formats from query.captures()
-        if isinstance(matches, dict):
-            # Dictionary format: {capture_name: [node1, node2, ...], ...}
-            for capture_name, nodes in matches.items():
-                for node in nodes:
-                    process_import_node(node, capture_name)
-        else:
-            # List format: [(node1, capture_name1), (node2, capture_name2), ...]
-            for match in matches:
-                # Handle different return types from query.captures()
-                if isinstance(match, tuple) and len(match) == 2:
-                    # Direct tuple unpacking
-                    node, capture_name = match
-                elif hasattr(match, "node") and hasattr(match, "capture_name"):
-                    # Object with node and capture_name attributes
-                    node, capture_name = match.node, match.capture_name
-                elif isinstance(match, dict) and "node" in match and "capture" in match:
-                    # Dictionary with node and capture keys
-                    node, capture_name = match["node"], match["capture"]
-                else:
-                    # Skip if format is unknown
-                    continue
-
+        # Process nodes from dict format: {capture_name: [node1, node2, ...], ...}
+        for capture_name, nodes in matches.items():
+            for node in nodes:
                 process_import_node(node, capture_name)
 
         # Add all detected modules to the result
@@ -740,39 +674,24 @@ def find_dependencies(
         if language == "python":
             # Look for aliased imports directly
             aliased_query_string = "(aliased_import) @alias"
-            aliased_query = safe_lang.query(aliased_query_string)
-            aliased_matches = aliased_query.captures(tree.root_node)
+            aliased_matches = query_captures(safe_lang, aliased_query_string, tree.root_node)
 
             # Process aliased imports
-            for match in aliased_matches:
-                # Initialize variables
-                aliased_node: Any | None = None
-                # We're not using aliased_capture_name but need to unpack it
-                _: str = ""
-
-                # Handle different return types
-                if isinstance(match, tuple) and len(match) == 2:
-                    aliased_node, _ = match
-                elif hasattr(match, "node") and hasattr(match, "capture_name"):
-                    aliased_node, _ = match.node, match.capture_name
-                elif isinstance(match, dict) and "node" in match and "capture" in match:
-                    aliased_node, _ = match["node"], match["capture"]
-                else:
-                    continue
-
-                # Extract module name from parent
-                if aliased_node is not None and aliased_node.parent and aliased_node.parent.parent:
-                    for child in aliased_node.parent.parent.children:
-                        if hasattr(child, "type") and child.type == "dotted_name":
-                            module_name_text = get_node_text(child, source_bytes)
-                            if module_name_text:
-                                module_name_str = (
-                                    module_name_text.decode("utf-8")
-                                    if isinstance(module_name_text, bytes)
-                                    else module_name_text
-                                )
-                                module_imports.add(module_name_str)
-                            break
+            for _capture_name, nodes in aliased_matches.items():
+                for aliased_node in nodes:
+                    # Extract module name from parent
+                    if aliased_node.parent and aliased_node.parent.parent:
+                        for child in aliased_node.parent.parent.children:
+                            if hasattr(child, "type") and child.type == "dotted_name":
+                                module_name_text = get_node_text(child, source_bytes)
+                                if module_name_text:
+                                    module_name_str = (
+                                        module_name_text.decode("utf-8")
+                                        if isinstance(module_name_text, bytes)
+                                        else module_name_text
+                                    )
+                                    module_imports.add(module_name_str)
+                                break
 
             # Update the module list with any new module imports
             if module_imports:

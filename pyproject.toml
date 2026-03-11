@@ -24,8 +24,8 @@ classifiers = [
 ]
 dependencies = [
     "mcp[cli]>=0.12.0",
-    "tree-sitter>=0.20.0,<0.25.0",
-    "tree-sitter-language-pack>=0.6.1,<0.7.0",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-language-pack>=0.13.0",
     "pyyaml>=6.0.2",
     "pydantic>=2.10.0",
 ]

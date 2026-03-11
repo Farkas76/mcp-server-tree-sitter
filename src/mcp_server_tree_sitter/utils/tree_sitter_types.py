@@ -12,7 +12,7 @@ from typing import Any, Protocol, TypeVar, cast
 class LanguageProtocol(Protocol):
     """Protocol for Tree-sitter Language class."""
 
-    def query(self, query_string: str) -> Any: ...
+    ...
 
 
 class ParserProtocol(Protocol):
@@ -80,6 +80,8 @@ try:
     from tree_sitter import Language as _Language
     from tree_sitter import Node as _Node
     from tree_sitter import Parser as _Parser
+    from tree_sitter import Query as _Query
+    from tree_sitter import QueryCursor as _QueryCursor
     from tree_sitter import Tree as _Tree
     from tree_sitter import TreeCursor as _TreeCursor
 
@@ -89,6 +91,8 @@ try:
     Tree = _Tree
     Node = _Node
     TreeCursor = _TreeCursor
+    Query = _Query
+    QueryCursor = _QueryCursor
     HAS_TREE_SITTER = True
 except ImportError:
     # Create stub classes if tree-sitter is not available
@@ -196,6 +200,21 @@ except ImportError:
         def root_node(self) -> Any:
             return DummyNode()
 
+    class DummyQuery:
+        """Dummy implementation when tree-sitter is not available."""
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+    class DummyQueryCursor:
+        """Dummy implementation when tree-sitter is not available."""
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def captures(self, node: Any) -> dict[str, list[Any]]:
+            return {}
+
     # Export dummy types for type checking
     # Declare dummy types for when tree-sitter is not available
     Language = DummyLanguage  # type: ignore
@@ -203,6 +222,8 @@ except ImportError:
     Tree = DummyTree  # type: ignore
     Node = DummyNode  # type: ignore
     TreeCursor = DummyTreeCursor  # type: ignore
+    Query = DummyQuery  # type: ignore
+    QueryCursor = DummyQueryCursor  # type: ignore
 
 
 # Helper function to safely cast to tree-sitter types
@@ -229,3 +250,13 @@ def ensure_node(obj: Any) -> "Node":
 def ensure_cursor(obj: Any) -> "TreeCursor":
     """Safely cast to TreeCursor type."""
     return cast(TreeCursor, obj)
+
+
+def query_captures(language: Any, query_string: str, node: Any) -> dict[str, list[Any]]:
+    """Run a tree-sitter query and return captures as dict[capture_name, list[Node]].
+
+    Uses the tree-sitter 0.25+ API: Query() constructor + QueryCursor.captures().
+    """
+    query = Query(language, query_string)
+    cursor = QueryCursor(query)
+    return cursor.captures(node)

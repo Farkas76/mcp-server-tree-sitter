@@ -184,50 +184,21 @@ def test_direct_query_with_language_pack() -> None:
 
         # Define a query to find the function name
         query_string = "(function_definition name: (identifier) @name)"
-        query = language.query(query_string)
+        from mcp_server_tree_sitter.utils.tree_sitter_types import query_captures
 
-        # Execute the query
-        captures = query.captures(root_node)
+        captures = query_captures(language, query_string, root_node)
 
-        # Verify captures
+        # Verify captures (dict[str, list[Node]])
         assert len(captures) > 0, "Query should return captures"
 
         # Find the 'hello' function name
         hello_found = False
-
-        # Handle different possible formats of captures
-        if isinstance(captures, list):
-            for capture in captures:
-                # Initialize variables with correct types
-                node: Optional[Any] = None
-                capture_name: str = ""
-
-                # Try different formats
-                if isinstance(capture, tuple):
-                    if len(capture) == 2:
-                        node, capture_name = capture
-                    elif len(capture) > 2:
-                        # It might have more elements than expected
-                        node, capture_name = capture[0], capture[1]
-                elif hasattr(capture, "node") and hasattr(capture, "capture_name"):
-                    node, capture_name = capture.node, capture.capture_name
-                elif isinstance(capture, dict) and "node" in capture and "capture" in capture:
-                    node, capture_name = capture["node"], capture["capture"]
-
-                if node is not None and capture_name == "name" and hasattr(node, "text") and node.text is not None:
-                    text = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
-                    if text == "hello":
-                        hello_found = True
-                        break
-        elif isinstance(captures, dict):
-            # Dictionary mapping capture names to nodes
-            if "name" in captures:
-                for node in captures["name"]:
-                    if node is not None and hasattr(node, "text") and node.text is not None:
-                        text = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
-                        if text == "hello":
-                            hello_found = True
-                            break
+        for node in captures.get("name", []):
+            if node is not None and hasattr(node, "text") and node.text is not None:
+                text = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
+                if text == "hello":
+                    hello_found = True
+                    break
 
         assert hello_found, "Query should find 'hello' function name"
 

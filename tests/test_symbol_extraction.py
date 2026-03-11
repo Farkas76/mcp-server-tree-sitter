@@ -437,61 +437,29 @@ def test_query_based_symbol_extraction(test_project) -> None:
             ) @import
         """
 
-        # Run the queries
-        functions_q = Query(language_obj, function_query)
-        classes_q = Query(language_obj, class_query)
-        imports_q = Query(language_obj, import_query)
+        # Run the queries using new tree-sitter 0.25 API
+        from mcp_server_tree_sitter.utils.tree_sitter_types import query_captures
 
-        function_captures = functions_q.captures(tree.root_node)
-        class_captures = classes_q.captures(tree.root_node)
-        import_captures = imports_q.captures(tree.root_node)
+        function_captures = query_captures(language_obj, function_query, tree.root_node)
+        class_captures = query_captures(language_obj, class_query, tree.root_node)
+        import_captures = query_captures(language_obj, import_query, tree.root_node)
 
         # Process and extract unique symbols
         functions: Dict[str, Dict[str, Any]] = {}
         classes: Dict[str, Dict[str, Any]] = {}
         imports: Dict[str, Dict[str, Any]] = {}
 
-        # Helper function to process captures with different formats
+        # Helper function to process captures (dict[str, list[Node]] format)
         def process_capture(captures, target_type, result_dict) -> None:
-            # Check if it's returning a dictionary format
-            if isinstance(captures, dict):
-                # Dictionary format: {capture_name: [node1, node2, ...], ...}
-                for capture_name, nodes in captures.items():
-                    if capture_name == target_type:
-                        for node in nodes:
-                            name = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
-                            result_dict[name] = {
-                                "name": name,
-                                "start": node.start_point,
-                                "end": node.end_point,
-                            }
-            else:
-                # Assume it's a list of matches
-                try:
-                    # Try different formats
-                    for item in captures:
-                        # Could be tuple, object, or dict
-                        if isinstance(item, tuple):
-                            if len(item) == 2:
-                                node, capture_name = item
-                            else:
-                                continue  # Skip if unexpected tuple size
-                        elif hasattr(item, "node") and hasattr(item, "capture_name"):
-                            node, capture_name = item.node, item.capture_name
-                        elif isinstance(item, dict) and "node" in item and "capture" in item:
-                            node, capture_name = item["node"], item["capture"]
-                        else:
-                            continue  # Skip if format unknown
-
-                        if capture_name == target_type:
-                            name = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
-                            result_dict[name] = {
-                                "name": name,
-                                "start": node.start_point,
-                                "end": node.end_point,
-                            }
-                except Exception as e:
-                    print(f"Error processing captures: {str(e)}")
+            for capture_name, nodes in captures.items():
+                if capture_name == target_type:
+                    for node in nodes:
+                        name = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
+                        result_dict[name] = {
+                            "name": name,
+                            "start": node.start_point,
+                            "end": node.end_point,
+                        }
 
         # Process each type of capture
         process_capture(function_captures, "function.name", functions)
@@ -499,51 +467,16 @@ def test_query_based_symbol_extraction(test_project) -> None:
 
         # For imports, use a separate function since the comparison is different
         def process_import_capture(captures) -> None:
-            # Check if it's returning a dictionary format
-            if isinstance(captures, dict):
-                # Dictionary format: {capture_name: [node1, node2, ...], ...}
-                for capture_name, nodes in captures.items():
-                    if capture_name in ("import.module", "import.from", "import.item"):
-                        for node in nodes:
-                            name = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
-                            imports[name] = {
-                                "name": name,
-                                "type": capture_name,
-                                "start": node.start_point,
-                                "end": node.end_point,
-                            }
-            else:
-                # Assume it's a list of matches
-                try:
-                    # Try different formats
-                    for item in captures:
-                        # Could be tuple, object, or dict
-                        if isinstance(item, tuple):
-                            if len(item) == 2:
-                                node, capture_name = item
-                            else:
-                                continue  # Skip if unexpected tuple size
-                        elif hasattr(item, "node") and hasattr(item, "capture_name"):
-                            node, capture_name = item.node, item.capture_name
-                        elif isinstance(item, dict) and "node" in item and "capture" in item:
-                            node, capture_name = item["node"], item["capture"]
-                        else:
-                            continue  # Skip if format unknown
-
-                        if capture_name in (
-                            "import.module",
-                            "import.from",
-                            "import.item",
-                        ):
-                            name = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
-                            imports[name] = {
-                                "name": name,
-                                "type": capture_name,
-                                "start": node.start_point,
-                                "end": node.end_point,
-                            }
-                except Exception as e:
-                    print(f"Error processing import captures: {str(e)}")
+            for capture_name, nodes in captures.items():
+                if capture_name in ("import.module", "import.from", "import.item"):
+                    for node in nodes:
+                        name = node.text.decode("utf-8") if hasattr(node.text, "decode") else str(node.text)
+                        imports[name] = {
+                            "name": name,
+                            "type": capture_name,
+                            "start": node.start_point,
+                            "end": node.end_point,
+                        }
 
         # Call the import capture processing function
         process_import_capture(import_captures)
