@@ -148,11 +148,9 @@ def main() -> None:
         container.config_manager.update_value("cache.enabled", False)
         container.tree_cache.set_enabled(False)
 
-    # Register capabilities and tools
-    from .capabilities import register_capabilities
+    # Register tools
     from .tools.registration import register_tools
 
-    register_capabilities(mcp)
     register_tools(mcp, container)
 
     # Load configuration from environment
