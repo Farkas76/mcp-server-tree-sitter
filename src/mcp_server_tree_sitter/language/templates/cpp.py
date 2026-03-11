@@ -10,9 +10,9 @@ TEMPLATES = {
             declarator: (function_declarator
                 declarator: (identifier) @function.name)) @function.decl
 
-        (method_definition
+        (function_definition
             declarator: (function_declarator
-                declarator: (field_identifier) @method.name)) @method.def
+                declarator: (qualified_identifier) @method.name)) @method.def
     """,
     "classes": """
         (class_specifier
@@ -44,7 +44,7 @@ TEMPLATES = {
         (template_declaration) @template.def
 
         (template_declaration
-            declaration: (class_specifier
+            (class_specifier
                 name: (type_identifier) @template.class)) @template.class_def
     """,
 }

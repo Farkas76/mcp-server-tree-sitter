@@ -3,51 +3,48 @@
 TEMPLATES = {
     "functions": """
         (function_definition
-            name: (identifier) @function.name) @function.def
+            (signature
+                (call_expression
+                    (identifier) @function.name
+                    (argument_list) @function.params))) @function.def
 
-        (function_definition
-            name: (identifier) @function.name
-            parameters: (parameter_list) @function.params
-            body: (block) @function.body) @function.def
-
-        (short_function_definition
-            name: (identifier) @function.name) @function.short_def
+        (assignment
+            (call_expression
+                (identifier) @function.name
+                (argument_list) @function.params)) @function.short_def
     """,
     "modules": """
         (module_definition
-            name: (identifier) @module.name
-            body: (block) @module.body) @module.def
+            name: (identifier) @module.name) @module.def
     """,
     "structs": """
         (struct_definition
-            name: (identifier) @struct.name
-            body: (block) @struct.body) @struct.def
-
-        (mutable_struct_definition
-            name: (identifier) @struct.name
-            body: (block) @struct.body) @struct.mutable_def
+            (type_head
+                (identifier) @struct.name)) @struct.def
     """,
     "imports": """
         (import_statement) @import
 
         (import_statement
-            name: (identifier) @import.name) @import.simple
+            (identifier) @import.name) @import.simple
 
         (using_statement) @using
 
         (using_statement
-            name: (identifier) @using.name) @using.simple
+            (identifier) @using.name) @using.simple
 
         (import_statement
-            name: (dot_expression) @import.qualified) @import.qualified
+            (import_path) @import.qualified) @import.qualified
     """,
     "macros": """
         (macro_definition
-            name: (identifier) @macro.name
-            body: (block) @macro.body) @macro.def
+            (signature
+                (call_expression
+                    (identifier) @macro.name))) @macro.def
     """,
     "abstractTypes": """
         (abstract_definition
-            name: (identifier) @abstract.name) @abstract.def
+            (type_head
+                (identifier) @abstract.name)) @abstract.def
     """,
 }

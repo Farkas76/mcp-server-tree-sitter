@@ -20,8 +20,7 @@ TEMPLATES = {
         (import_statement) @import
 
         (import_statement
-            source: (string) @import.source
-            specifier: (_) @import.specifier) @import.full
+            source: (string) @import.source) @import.full
     """,
     "function_calls": """
         (call_expression
