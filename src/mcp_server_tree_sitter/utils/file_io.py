@@ -5,10 +5,9 @@ and consistent interfaces for both text and binary operations.
 """
 
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 
-def read_text_file(path: Union[str, Path]) -> List[str]:
+def read_text_file(path: str | Path) -> list[str]:
     """
     Safely read a text file with proper encoding handling.
 
@@ -18,11 +17,11 @@ def read_text_file(path: Union[str, Path]) -> List[str]:
     Returns:
         List of lines from the file
     """
-    with open(str(path), "r", encoding="utf-8", errors="replace") as f:
+    with Path(path).open(encoding="utf-8", errors="replace") as f:
         return f.readlines()
 
 
-def read_binary_file(path: Union[str, Path]) -> bytes:
+def read_binary_file(path: str | Path) -> bytes:
     """
     Safely read a binary file.
 
@@ -32,11 +31,11 @@ def read_binary_file(path: Union[str, Path]) -> bytes:
     Returns:
         File contents as bytes
     """
-    with open(str(path), "rb") as f:
+    with Path(path).open("rb") as f:
         return f.read()
 
 
-def get_file_content_and_lines(path: Union[str, Path]) -> Tuple[bytes, List[str]]:
+def get_file_content_and_lines(path: str | Path) -> tuple[bytes, list[str]]:
     """
     Get both binary content and text lines from a file.
 
@@ -65,7 +64,7 @@ def is_line_comment(line: str, comment_prefix: str) -> bool:
     return line.strip().startswith(comment_prefix)
 
 
-def count_comment_lines(lines: List[str], comment_prefix: str) -> int:
+def count_comment_lines(lines: list[str], comment_prefix: str) -> int:
     """
     Count comment lines in a file.
 
@@ -79,7 +78,7 @@ def count_comment_lines(lines: List[str], comment_prefix: str) -> int:
     return sum(1 for line in lines if is_line_comment(line, comment_prefix))
 
 
-def get_comment_prefix(language: str) -> Optional[str]:
+def get_comment_prefix(language: str) -> str | None:
     """
     Get the comment prefix for a language.
 
@@ -117,7 +116,7 @@ def get_comment_prefix(language: str) -> Optional[str]:
     return comment_starters.get(language)
 
 
-def parse_file_with_encoding(path: Union[str, Path], encoding: str = "utf-8") -> Tuple[bytes, List[str]]:
+def parse_file_with_encoding(path: str | Path, encoding: str = "utf-8") -> tuple[bytes, list[str]]:
     """
     Parse a file with explicit encoding handling, returning both binary and text.
 
@@ -137,7 +136,7 @@ def parse_file_with_encoding(path: Union[str, Path], encoding: str = "utf-8") ->
     return binary_content, lines
 
 
-def read_file_lines(path: Union[str, Path], start_line: int = 0, max_lines: Optional[int] = None) -> List[str]:
+def read_file_lines(path: str | Path, start_line: int = 0, max_lines: int | None = None) -> list[str]:
     """
     Read specific lines from a file.
 
@@ -149,7 +148,7 @@ def read_file_lines(path: Union[str, Path], start_line: int = 0, max_lines: Opti
     Returns:
         List of requested lines
     """
-    with open(str(path), "r", encoding="utf-8", errors="replace") as f:
+    with Path(path).open(encoding="utf-8", errors="replace") as f:
         # Skip lines before start_line
         for _ in range(start_line):
             next(f, None)

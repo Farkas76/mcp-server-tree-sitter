@@ -1,7 +1,8 @@
 """MCP server implementation for Tree-sitter with dependency injection."""
 
 import os
-from typing import Any, Dict, Optional, Tuple
+from pathlib import Path
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -18,11 +19,11 @@ logger = get_logger(__name__)
 
 def configure_with_context(
     container: DependencyContainer,
-    config_path: Optional[str] = None,
-    cache_enabled: Optional[bool] = None,
-    max_file_size_mb: Optional[int] = None,
-    log_level: Optional[str] = None,
-) -> Tuple[Dict[str, Any], ServerConfig]:
+    config_path: str | None = None,
+    cache_enabled: bool | None = None,
+    max_file_size_mb: int | None = None,
+    log_level: str | None = None,
+) -> tuple[dict[str, Any], ServerConfig]:
     """Configure the server with explicit context.
 
     Args:
@@ -50,11 +51,11 @@ def configure_with_context(
     if config_path:
         logger.info(f"Configuring server with YAML config from: {config_path}")
         # Log absolute path to ensure we're looking at the right file
-        abs_path = os.path.abspath(config_path)
+        abs_path = str(Path(config_path).resolve())
         logger.info(f"Absolute path: {abs_path}")
 
         # Check if the file exists before trying to load it
-        if not os.path.exists(abs_path):
+        if not Path(abs_path).exists():
             logger.error(f"Config file does not exist: {abs_path}")
 
         config_manager.load_from_file(abs_path)

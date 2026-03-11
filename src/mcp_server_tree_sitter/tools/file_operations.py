@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..exceptions import FileAccessError, ProjectError
 from ..utils.security import validate_file_access
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 def list_project_files(
     project: Any,
-    pattern: Optional[str] = None,
-    max_depth: Optional[int] = None,
-    filter_extensions: Optional[List[str]] = None,
-) -> List[str]:
+    pattern: str | None = None,
+    max_depth: int | None = None,
+    filter_extensions: list[str] | None = None,
+) -> list[str]:
     """
     List files in a project, optionally filtered by pattern.
 
@@ -78,7 +78,7 @@ def get_file_content(
     project: Any,
     path: str,
     as_bytes: bool = False,
-    max_lines: Optional[int] = None,
+    max_lines: int | None = None,
     start_line: int = 0,
 ) -> str:
     """
@@ -114,7 +114,7 @@ def get_file_content(
         # and a standalone call "hello()"
         # The test expects max_lines=2 to exclude the standalone function call line
         if not as_bytes and max_lines is not None and path.endswith("test.py"):
-            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            with file_path.open(encoding="utf-8", errors="replace") as f:
                 # Read all lines to analyze them
                 all_lines = f.readlines()
 
@@ -130,7 +130,7 @@ def get_file_content(
 
         # Handle normal cases
         if as_bytes:
-            with open(file_path, "rb") as f:
+            with file_path.open("rb") as f:
                 if max_lines is None and start_line == 0:
                     # Simple case: read whole file
                     return f.read()  # type: ignore
@@ -140,27 +140,22 @@ def get_file_content(
 
                 # Apply line limits
                 start_idx = min(start_line, len(lines))
-                if max_lines is not None:
-                    end_idx = min(start_idx + max_lines, len(lines))
-                else:
-                    end_idx = len(lines)
+                end_idx = min(start_idx + max_lines, len(lines)) if max_lines is not None else len(lines)
 
                 return b"".join(lines[start_idx:end_idx])  # type: ignore
         else:
-            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            with file_path.open(encoding="utf-8", errors="replace") as f:
                 if max_lines is None and start_line == 0:
                     # Simple case: read whole file
-                    return f.read()
+                    content: str = f.read()
+                    return content
 
                 # Read all lines for precise control
                 all_lines = f.readlines()
 
                 # Get exactly the requested lines
                 start_idx = min(start_line, len(all_lines))
-                if max_lines is not None:
-                    end_idx = min(start_idx + max_lines, len(all_lines))
-                else:
-                    end_idx = len(all_lines)
+                end_idx = min(start_idx + max_lines, len(all_lines)) if max_lines is not None else len(all_lines)
 
                 selected_lines = all_lines[start_idx:end_idx]
                 return "".join(selected_lines)
@@ -173,7 +168,7 @@ def get_file_content(
         raise FileAccessError(f"Error reading file: {e}") from e
 
 
-def get_file_info(project: Any, path: str) -> Dict[str, Any]:
+def get_file_info(project: Any, path: str) -> dict[str, Any]:
     """
     Get metadata about a file.
 
@@ -228,7 +223,7 @@ def count_lines(file_path: Path) -> int:
         Number of lines
     """
     try:
-        with open(file_path, "rb") as f:
+        with file_path.open("rb") as f:
             return sum(1 for _ in f)
-    except (IOError, OSError):
+    except OSError:
         return 0

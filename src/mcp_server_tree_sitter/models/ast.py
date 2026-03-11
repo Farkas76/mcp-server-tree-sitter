@@ -4,7 +4,7 @@ This module provides functions for converting tree-sitter AST nodes to dictionar
 finding nodes at specific positions, and other AST-related operations.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ..utils.tree_sitter_helpers import (
     get_node_text,
@@ -18,11 +18,11 @@ from .ast_cursor import node_to_dict_cursor
 
 def node_to_dict(
     node: Any,
-    source_bytes: Optional[bytes] = None,
+    source_bytes: bytes | None = None,
     include_children: bool = True,
     include_text: bool = True,
     max_depth: int = 5,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convert a tree-sitter node to a dictionary representation.
 
@@ -44,7 +44,7 @@ def node_to_dict(
     return node_to_dict_cursor(node, source_bytes, include_children, include_text, max_depth)
 
 
-def summarize_node(node: Any, source_bytes: Optional[bytes] = None) -> Dict[str, Any]:
+def summarize_node(node: Any, source_bytes: bytes | None = None) -> dict[str, Any]:
     """
     Create a compact summary of a node without details or children.
 
@@ -85,7 +85,7 @@ def summarize_node(node: Any, source_bytes: Optional[bytes] = None) -> Dict[str,
     return result
 
 
-def find_node_at_position(root_node: Any, row: int, column: int) -> Optional[Any]:
+def find_node_at_position(root_node: Any, row: int, column: int) -> Any | None:
     """
     Find the most specific node at a given position using cursor-based traversal.
 
@@ -109,16 +109,15 @@ def find_node_at_position(root_node: Any, row: int, column: int) -> Optional[Any
     current_best = cursor.node
 
     # Special handling for function definitions and identifiers
-    def check_for_specific_nodes(node: Any) -> Optional[Any]:
+    def check_for_specific_nodes(node: Any) -> Any | None:
         # For function definitions, check if position is over the function name
         if node.type == "function_definition":
             for child in node.children:
-                if child.type in ["identifier", "name"]:
-                    if (
-                        child.start_point[0] <= row <= child.end_point[0]
-                        and child.start_point[1] <= column <= child.end_point[1]
-                    ):
-                        return child
+                if child.type in ["identifier", "name"] and (
+                    child.start_point[0] <= row <= child.end_point[0]
+                    and child.start_point[1] <= column <= child.end_point[1]
+                ):
+                    return child
         return None
 
     # First check if we have a specific node like a function name
@@ -169,7 +168,7 @@ def find_node_at_position(root_node: Any, row: int, column: int) -> Optional[Any
 def extract_node_path(
     root_node: Any,
     target_node: Any,
-) -> List[Tuple[str, Optional[str]]]:
+) -> list[tuple[str, str | None]]:
     """
     Extract the path from root to a specific node using safe node handling.
 

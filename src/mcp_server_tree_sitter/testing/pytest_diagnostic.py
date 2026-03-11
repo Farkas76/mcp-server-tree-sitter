@@ -7,9 +7,10 @@ while maintaining standard test pass/fail behavior.
 import json
 import time
 import traceback
+from collections.abc import Generator
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any
 
 import pytest
 
@@ -48,8 +49,8 @@ class DiagnosticJSONEncoder(JSONEncoder):
 
 
 # Global storage for test context and diagnostic results
-_DIAGNOSTICS: Dict[str, "DiagnosticData"] = {}
-_CURRENT_TEST: Dict[str, Any] = {}
+_DIAGNOSTICS: dict[str, "DiagnosticData"] = {}
+_CURRENT_TEST: dict[str, Any] = {}
 
 
 class DiagnosticData:
@@ -59,13 +60,13 @@ class DiagnosticData:
         """Initialize with test ID."""
         self.test_id = test_id
         self.start_time = time.time()
-        self.end_time: Optional[float] = None
+        self.end_time: float | None = None
         self.status = "pending"
-        self.details: Dict[str, Any] = {}
-        self.errors: List[Dict[str, Any]] = []
-        self.artifacts: Dict[str, Any] = {}
+        self.details: dict[str, Any] = {}
+        self.errors: list[dict[str, Any]] = []
+        self.artifacts: dict[str, Any] = {}
 
-    def add_error(self, error_type: str, message: str, tb: Optional[str] = None) -> None:
+    def add_error(self, error_type: str, message: str, tb: str | None = None) -> None:
         """Add an error to the diagnostic data."""
         error_info = {
             "type": error_type,
@@ -90,7 +91,7 @@ class DiagnosticData:
         if not self.errors:
             self.status = status
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "test_id": self.test_id,
@@ -126,7 +127,7 @@ def pytest_configure(config: Any) -> None:
     config.addinivalue_line("markers", "diagnostic: mark test as producing diagnostic information")
 
 
-def pytest_runtest_protocol(item: Any, nextitem: Any) -> Optional[bool]:
+def pytest_runtest_protocol(item: Any, nextitem: Any) -> bool | None:
     """Custom test protocol that captures detailed diagnostics."""
     # Use the standard protocol
     return None
@@ -173,7 +174,7 @@ def pytest_sessionfinish(session: Any, exitstatus: Any) -> None:
     diagnostics_dict = {k: v.to_dict() for k, v in _DIAGNOSTICS.items()}
 
     # Write the results to a file
-    with open(output_file, "w") as f:
+    with output_file.open("w") as f:
         json.dump(
             {
                 "timestamp": timestamp,

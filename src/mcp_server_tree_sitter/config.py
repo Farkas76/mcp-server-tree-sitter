@@ -14,7 +14,7 @@ The precedence order for configuration is:
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
@@ -37,8 +37,8 @@ class SecurityConfig(BaseModel):
     """Security settings."""
 
     max_file_size_mb: int = 5
-    excluded_dirs: List[str] = Field(default_factory=lambda: [".git", "node_modules", "__pycache__"])
-    allowed_extensions: Optional[List[str]] = None  # None means all extensions allowed
+    excluded_dirs: list[str] = Field(default_factory=lambda: [".git", "node_modules", "__pycache__"])
+    allowed_extensions: list[str] | None = None  # None means all extensions allowed
 
 
 class LanguageConfig(BaseModel):
@@ -46,7 +46,7 @@ class LanguageConfig(BaseModel):
 
     auto_install: bool = False  # DEPRECATED: No longer used with tree-sitter-language-pack
     default_max_depth: int = 5  # Default depth for AST traversal
-    preferred_languages: List[str] = Field(default_factory=list)
+    preferred_languages: list[str] = Field(default_factory=list)
 
 
 class ServerConfig(BaseModel):
@@ -68,7 +68,7 @@ class ServerConfig(BaseModel):
             return cls()
 
         try:
-            with open(config_path, "r") as f:
+            with config_path.open() as f:
                 file_content = f.read()
                 logger.debug(f"YAML File content:\n{file_content}")
                 config_data = yaml.safe_load(file_content)
@@ -199,7 +199,7 @@ def _convert_value(value_str: str, current_value: Any) -> Any:
 class ConfigurationManager:
     """Manages server configuration without relying on global variables."""
 
-    def __init__(self, initial_config: Optional[ServerConfig] = None):
+    def __init__(self, initial_config: ServerConfig | None = None):
         """Initialize with optional initial configuration."""
         self._config = initial_config or ServerConfig()
         self._logger = logging.getLogger(__name__)
@@ -224,7 +224,7 @@ class ConfigurationManager:
         """Get the current configuration."""
         return self._config
 
-    def load_from_file(self, path: Union[str, Path]) -> ServerConfig:
+    def load_from_file(self, path: str | Path) -> ServerConfig:
         """Load configuration from a YAML file."""
         self._logger.info(f"Loading configuration from file: {path}")
         config_path = Path(path)
@@ -238,7 +238,7 @@ class ConfigurationManager:
             return self._config
 
         try:
-            with open(config_path, "r") as f:
+            with config_path.open() as f:
                 file_content = f.read()
                 self._logger.info(f"YAML File content:\n{file_content}")
                 # Check if file content is empty
@@ -379,7 +379,7 @@ class ConfigurationManager:
         # Environment variables > Explicit updates > YAML > Defaults
         update_config_from_env(self._config)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to a dictionary."""
         return {
             "cache": {
@@ -406,7 +406,7 @@ class ConfigurationManager:
 # 3. Configuration passed as function parameters
 
 
-def get_default_config_path() -> Optional[Path]:
+def get_default_config_path() -> Path | None:
     """Get the default configuration file path based on the platform."""
     import platform
 
@@ -478,7 +478,7 @@ def update_config_from_new(original: ServerConfig, new: ServerConfig) -> None:
             logger.error(f"Fallback update also failed: {e2}")
 
 
-def load_config(config_path: Optional[str] = None) -> ServerConfig:
+def load_config(config_path: str | None = None) -> ServerConfig:
     """Load and initialize configuration.
 
     Args:
@@ -516,7 +516,7 @@ def load_config(config_path: Optional[str] = None) -> ServerConfig:
         try:
             logger.info(f"Loading configuration from file: {path_to_load}")
 
-            with open(path_to_load, "r") as f:
+            with path_to_load.open() as f:
                 content = f.read()
                 logger.debug(f"File content:\n{content}")
                 if not content.strip():
@@ -524,7 +524,7 @@ def load_config(config_path: Optional[str] = None) -> ServerConfig:
                     # Continue to apply environment variables below
                 else:
                     # Load new configuration
-                    logger.info(f"Loading configuration from {str(path_to_load)}")
+                    logger.info(f"Loading configuration from {path_to_load!s}")
                     new_config = ServerConfig.from_file(str(path_to_load))
 
                     # Debug output before update

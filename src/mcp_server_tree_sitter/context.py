@@ -5,7 +5,7 @@ and provide a cleaner interface for interacting with the application's
 components while supporting dependency injection.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Import logging from bootstrap package
 from .bootstrap import get_logger, update_log_levels
@@ -24,10 +24,10 @@ class ServerContext:
 
     def __init__(
         self,
-        config_manager: Optional[ConfigurationManager] = None,
-        project_registry: Optional[ProjectRegistry] = None,
-        language_registry: Optional[LanguageRegistry] = None,
-        tree_cache: Optional[TreeCache] = None,
+        config_manager: ConfigurationManager | None = None,
+        project_registry: ProjectRegistry | None = None,
+        language_registry: LanguageRegistry | None = None,
+        tree_cache: TreeCache | None = None,
     ):
         """
         Initialize with optional components.
@@ -46,8 +46,8 @@ class ServerContext:
 
     # Project management methods
     def register_project(
-        self, path: str, name: Optional[str] = None, description: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, path: str, name: str | None = None, description: str | None = None
+    ) -> dict[str, Any]:
         """Register a project for code analysis."""
         try:
             # Register project
@@ -60,17 +60,17 @@ class ServerContext:
         except Exception as e:
             raise ProjectError(f"Failed to register project: {e}") from e
 
-    def list_projects(self) -> List[Dict[str, Any]]:
+    def list_projects(self) -> list[dict[str, Any]]:
         """List all registered projects."""
         return self.project_registry.list_projects()
 
-    def remove_project(self, name: str) -> Dict[str, str]:
+    def remove_project(self, name: str) -> dict[str, str]:
         """Remove a registered project."""
         self.project_registry.remove_project(name)
         return {"status": "success", "message": f"Project '{name}' removed"}
 
     # Cache management methods
-    def clear_cache(self, project: Optional[str] = None, file_path: Optional[str] = None) -> Dict[str, str]:
+    def clear_cache(self, project: str | None = None, file_path: str | None = None) -> dict[str, str]:
         """Clear the parse tree cache."""
         if project and file_path:
             # Get file path
@@ -88,11 +88,11 @@ class ServerContext:
     # Configuration management methods
     def configure(
         self,
-        config_path: Optional[str] = None,
-        cache_enabled: Optional[bool] = None,
-        max_file_size_mb: Optional[int] = None,
-        log_level: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        config_path: str | None = None,
+        cache_enabled: bool | None = None,
+        max_file_size_mb: int | None = None,
+        log_level: str | None = None,
+    ) -> dict[str, Any]:
         """Configure the server."""
         # Load config if path provided
         if config_path:

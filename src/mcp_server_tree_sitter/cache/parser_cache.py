@@ -5,7 +5,7 @@ import threading
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 # Import global_context at runtime to avoid circular imports
 from ..utils.tree_sitter_types import (
@@ -22,19 +22,19 @@ logger = logging.getLogger(__name__)
 class TreeCache:
     """Cache for parsed syntax trees."""
 
-    def __init__(self, max_size_mb: Optional[int] = None, ttl_seconds: Optional[int] = None):
+    def __init__(self, max_size_mb: int | None = None, ttl_seconds: int | None = None):
         """Initialize the tree cache with explicit size and TTL settings."""
-        self.cache: Dict[str, Tuple[Any, bytes, float]] = {}  # (tree, source, timestamp)
+        self.cache: dict[str, tuple[Any, bytes, float]] = {}  # (tree, source, timestamp)
         self.lock = threading.RLock()
         self.current_size_bytes = 0
-        self.modified_trees: Dict[str, bool] = {}
+        self.modified_trees: dict[str, bool] = {}
         self.max_size_mb = max_size_mb or 100
         self.ttl_seconds = ttl_seconds or 300
         self.enabled = True
 
     def _get_cache_key(self, file_path: Path, language: str) -> str:
         """Generate cache key from file path and language."""
-        return f"{language}:{str(file_path)}:{file_path.stat().st_mtime}"
+        return f"{language}:{file_path!s}:{file_path.stat().st_mtime}"
 
     def set_enabled(self, enabled: bool) -> None:
         """Set whether caching is enabled."""
@@ -90,7 +90,7 @@ class TreeCache:
             # Fallback to instance value if container unavailable
             return self.enabled
 
-    def get(self, file_path: Path, language: str) -> Optional[Tuple[Tree, bytes]]:
+    def get(self, file_path: Path, language: str) -> tuple[Tree, bytes] | None:
         """
         Get cached tree if available and not expired.
 
@@ -322,7 +322,7 @@ class TreeCache:
         else:
             logger.info(log_msg)
 
-    def invalidate(self, file_path: Optional[Path] = None) -> None:
+    def invalidate(self, file_path: Path | None = None) -> None:
         """
         Invalidate cache entries.
 

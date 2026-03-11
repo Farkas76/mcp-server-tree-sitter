@@ -1,7 +1,7 @@
 """AST operation tools for MCP server."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..exceptions import FileAccessError, ParsingError
 from ..models.ast import node_to_dict
@@ -19,9 +19,9 @@ def get_file_ast(
     path: str,
     language_registry: Any,
     tree_cache: Any,
-    max_depth: Optional[int] = None,
+    max_depth: int | None = None,
     include_text: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get the AST for a file.
 
@@ -115,7 +115,7 @@ def parse_file(file_path: Any, language: str, language_registry: Any, tree_cache
         raise ParsingError(f"Error parsing {file_path}: {e}") from e
 
 
-def find_node_at_position(root_node: Any, row: int, column: int) -> Optional[Any]:
+def find_node_at_position(root_node: Any, row: int, column: int) -> Any | None:
     """
     Find the most specific node at a given position.
 

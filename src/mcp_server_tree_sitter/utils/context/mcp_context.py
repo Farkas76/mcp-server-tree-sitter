@@ -1,8 +1,9 @@
 """Context handling for MCP operations with progress reporting."""
 
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Generator, Optional, TypeVar
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class ProgressScope:
 class MCPContext:
     """Context for MCP operations with progress reporting."""
 
-    def __init__(self, ctx: Optional[Any] = None):
+    def __init__(self, ctx: Any | None = None):
         """
         Initialize context with optional MCP context.
 
@@ -163,7 +164,7 @@ class MCPContext:
         return MCPContext(ctx)
 
     @staticmethod
-    def from_mcp_context(ctx: Optional[Any]) -> "MCPContext":
+    def from_mcp_context(ctx: Any | None) -> "MCPContext":
         """
         Create a context from an MCP context.
 
@@ -175,7 +176,7 @@ class MCPContext:
         """
         return MCPContext(ctx)
 
-    def try_get_mcp_context(self) -> Optional[Any]:
+    def try_get_mcp_context(self) -> Any | None:
         """
         Get the wrapped MCP context if available.
 

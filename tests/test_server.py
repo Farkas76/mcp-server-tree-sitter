@@ -3,6 +3,7 @@
 import logging
 import os
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -160,8 +161,8 @@ cache:
         config_path = temp_file.name
 
     try:
-        # Get the absolute path for comparison
-        abs_path = os.path.abspath(config_path)
+        # Get the resolved path for comparison (Path.resolve() resolves symlinks)
+        abs_path = str(Path(config_path).resolve())
 
         # Call configure_with_context with the config path
         config_dict, config = configure_with_context(mock_container, config_path=config_path)

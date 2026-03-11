@@ -3,7 +3,7 @@
 import concurrent.futures
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..exceptions import QueryError, SecurityError
 from ..utils.security import validate_file_access
@@ -12,13 +12,13 @@ from ..utils.security import validate_file_access
 def search_text(
     project: Any,
     pattern: str,
-    file_pattern: Optional[str] = None,
+    file_pattern: str | None = None,
     max_results: int = 100,
     case_sensitive: bool = False,
     whole_word: bool = False,
     use_regex: bool = False,
     context_lines: int = 0,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Search for text pattern in project files.
 
@@ -37,7 +37,7 @@ def search_text(
     """
     root = project.root_path
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     pattern_obj = None
 
     # Prepare the pattern
@@ -59,12 +59,12 @@ def search_text(
     file_pattern = file_pattern or "**/*"
 
     # Process files in parallel
-    def process_file(file_path: Path) -> List[Dict[str, Any]]:
+    def process_file(file_path: Path) -> list[dict[str, Any]]:
         file_results = []
         try:
             validate_file_access(file_path, root)
 
-            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            with file_path.open(encoding="utf-8", errors="replace") as f:
                 lines = f.readlines()
 
             for i, line in enumerate(lines, 1):
@@ -141,11 +141,11 @@ def query_code(
     query_string: str,
     language_registry: Any,
     tree_cache: Any,
-    file_path: Optional[str] = None,
-    language: Optional[str] = None,
+    file_path: str | None = None,
+    language: str | None = None,
     max_results: int = 100,
     include_snippets: bool = True,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Run a tree-sitter query on code files.
 
@@ -163,7 +163,7 @@ def query_code(
         List of query matches
     """
     root = project.root_path
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
 
     if file_path is not None:
         # Query a specific file
@@ -190,7 +190,7 @@ def query_code(
                 tree, source_bytes = cached
             else:
                 # Parse file
-                with open(abs_path, "rb") as f:
+                with abs_path.open("rb") as f:
                     source_bytes = f.read()
 
                 parser = language_registry.get_parser(language)
@@ -294,7 +294,7 @@ def query_code(
             raise QueryError(f"No file extensions found for language {language}")
 
         # Process files in parallel
-        def process_file(rel_path: str) -> List[Dict[str, Any]]:
+        def process_file(rel_path: str) -> list[dict[str, Any]]:
             try:
                 # Use single-file version of query_code
                 file_results = query_code(

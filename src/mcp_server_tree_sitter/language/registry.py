@@ -2,7 +2,7 @@
 
 import logging
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from tree_sitter_language_pack import get_language, get_parser
 
@@ -24,7 +24,7 @@ class LanguageRegistry:
     def __init__(self) -> None:
         """Initialize the registry."""
         self._lock = threading.RLock()
-        self.languages: Dict[str, Language] = {}
+        self.languages: dict[str, Language] = {}
         self._language_map = {
             "py": "python",
             "js": "javascript",
@@ -80,7 +80,7 @@ class LanguageRegistry:
             # If dependency container isn't available yet, just skip this step
             logger.warning("Skipping pre-loading of languages due to missing dependencies")
 
-    def language_for_file(self, file_path: str) -> Optional[str]:
+    def language_for_file(self, file_path: str) -> str | None:
         """
         Detect language from file extension.
 
@@ -93,7 +93,7 @@ class LanguageRegistry:
         ext = file_path.split(".")[-1].lower() if "." in file_path else ""
         return self._language_map.get(ext)
 
-    def list_available_languages(self) -> List[str]:
+    def list_available_languages(self) -> list[str]:
         """
         List languages that are available via tree-sitter-language-pack.
 
@@ -137,7 +137,7 @@ class LanguageRegistry:
         # Return as a sorted list
         return sorted(available)
 
-    def list_installable_languages(self) -> List[Tuple[str, str]]:
+    def list_installable_languages(self) -> list[tuple[str, str]]:
         """
         List languages that can be installed.
         With tree-sitter-language-pack, no additional installation is needed.

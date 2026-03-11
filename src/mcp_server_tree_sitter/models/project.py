@@ -4,7 +4,7 @@ import os
 import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from ..exceptions import ProjectError
 from ..utils.path import get_project_root, normalize_path
@@ -13,15 +13,15 @@ from ..utils.path import get_project_root, normalize_path
 class Project:
     """Represents a project for code analysis."""
 
-    def __init__(self, name: str, path: Path, description: Optional[str] = None):
+    def __init__(self, name: str, path: Path, description: str | None = None):
         self.name = name
         self.root_path = path
         self.description = description
-        self.languages: Dict[str, int] = {}  # Language -> file count
+        self.languages: dict[str, int] = {}  # Language -> file count
         self.last_scan_time = 0
         self.scan_lock = threading.Lock()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "name": self.name,
@@ -31,7 +31,7 @@ class Project:
             "last_scan_time": self.last_scan_time,
         }
 
-    def scan_files(self, language_registry: Any, force: bool = False) -> Dict[str, int]:
+    def scan_files(self, language_registry: Any, force: bool = False) -> dict[str, int]:
         """
         Scan project files and identify languages.
 
@@ -47,8 +47,8 @@ class Project:
             return self.languages
 
         with self.scan_lock:
-            languages: Dict[str, int] = {}
-            scanned: Set[str] = set()
+            languages: dict[str, int] = {}
+            scanned: set[str] = set()
 
             for root, _, files in os.walk(self.root_path):
                 # Skip hidden directories
@@ -60,7 +60,7 @@ class Project:
                     if file.startswith("."):
                         continue
 
-                    file_path = os.path.join(root, file)
+                    file_path = Path(root) / file
                     rel_path = os.path.relpath(file_path, self.root_path)
 
                     # Skip already scanned files
@@ -111,7 +111,7 @@ class ProjectRegistry:
         """Implement singleton pattern with proper locking."""
         with cls._global_lock:
             if cls._instance is None:
-                instance = super(ProjectRegistry, cls).__new__(cls)
+                instance = super().__new__(cls)
                 # We need to set attributes on the instance, not the class
                 instance._projects = {}
                 cls._instance = instance
@@ -121,9 +121,9 @@ class ProjectRegistry:
         """Initialize the registry only once."""
         # The actual initialization is done in __new__ to ensure it happens exactly once
         if not hasattr(self, "_projects"):
-            self._projects: Dict[str, Project] = {}
+            self._projects: dict[str, Project] = {}
 
-    def register_project(self, name: str, path: str, description: Optional[str] = None) -> Project:
+    def register_project(self, name: str, path: str, description: str | None = None) -> Project:
         """
         Register a new project.
 
@@ -176,7 +176,7 @@ class ProjectRegistry:
             project = self._projects[name]
             return project
 
-    def list_projects(self) -> List[Dict[str, Any]]:
+    def list_projects(self) -> list[dict[str, Any]]:
         """
         List all registered projects.
 
